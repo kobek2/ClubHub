@@ -1,6 +1,85 @@
 import React, { useState, useEffect } from 'react'; 
-import { Calendar, Plus, Clock, X, Trash2, ArrowRight, List, MessageSquare, MapPin } from 'lucide-react';
-import { MOCK_USERS } from '../utils/mockData';
+import { Calendar, Plus, X, Trash2, List, MessageSquare, Package, DollarSign } from 'lucide-react';
+
+// MOCK_USERS must be defined in your actual project setup 
+const MOCK_USERS = [
+    { id: 'u1', name: 'President Alice', role: 'PRESIDENT' },
+    { id: 'u2', name: 'Secretary Bob', role: 'SECRETARY' },
+    { id: 'u3', name: 'Treasurer Charlie', role: 'TREASURER' },
+];
+
+
+// =================================================================================
+// 🚨 DEFINITIVE FIX COMPONENT: PlanningBlockRenderer is now a stable, memoized component
+//    It is defined OUTSIDE the AgendaBoard function to prevent unnecessary re-creation.
+// =================================================================================
+const PlanningBlockRenderer = React.memo(({ block, onUpdate, onRemove, isEditable }) => {
+    if (block.type !== 'EVENT_PLAN') return null;
+
+    return (
+        <div className="bg-white border-2 border-green-200 rounded-lg p-4 shadow-md mb-4">
+            <div className="flex justify-between items-center border-b pb-2 mb-3">
+                <h4 className="font-bold text-green-700 flex items-center">
+                    <Package size={18} className="mr-2" />
+                    Event Planning Details
+                </h4>
+                {isEditable && (
+                    <button onClick={() => onRemove(block.id)} className="text-gray-400 hover:text-red-500">
+                        <Trash2 size={16} />
+                    </button>
+                )}
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+                <label className="block">
+                    <span className="text-gray-600">Event Name:</span>
+                    <input 
+                        type="text" 
+                        value={block.data.name} 
+                        onChange={(e) => onUpdate(block.id, 'name', e.target.value)} 
+                        className="w-full border-b focus:border-green-500 outline-none p-1"
+                        disabled={!isEditable}
+                    />
+                </label>
+                <label className="block">
+                    <span className="text-gray-600">Location:</span>
+                    <input 
+                        type="text" 
+                        value={block.data.location} 
+                        onChange={(e) => onUpdate(block.id, 'location', e.target.value)} 
+                        className="w-full border-b focus:border-green-500 outline-none p-1"
+                        disabled={!isEditable}
+                    />
+                </label>
+                <label className="block">
+                    <span className="text-gray-600">Date/Time:</span>
+                    <input 
+                        type="text" 
+                        value={block.data.date} 
+                        onChange={(e) => onUpdate(block.id, 'date', e.target.value)} 
+                        className="w-full border-b focus:border-green-500 outline-none p-1"
+                        disabled={!isEditable}
+                    />
+                </label>
+                <label className="block">
+                    <span className="text-gray-600">Marketing Status:</span>
+                    <select 
+                        value={block.data.marketingStatus} 
+                        onChange={(e) => onUpdate(block.id, 'marketingStatus', e.target.value)} 
+                        className="w-full border-b focus:border-green-500 outline-none p-1 bg-white"
+                        disabled={!isEditable}
+                    >
+                        <option>Draft</option>
+                        <option>Review</option>
+                        <option>Approved</option>
+                        <option>Launched</option>
+                    </select>
+                </label>
+            </div>
+        </div>
+    );
+});
+// =================================================================================
+
 
 const AgendaBoard = ({ meetings, setMeetings, setTasks, currentUser, events, setEvents }) => {
   // --- Define local state variables here ---
@@ -8,22 +87,23 @@ const AgendaBoard = ({ meetings, setMeetings, setTasks, currentUser, events, set
   const [noteContent, setNoteContent] = useState('');
   const [newMeetingTitle, setNewMeetingTitle] = useState('');
   const [newMeetingDate, setNewMeetingDate] = useState('');
-  
-  // Agenda is a structured array of objects
   const [newAgenda, setNewAgenda] = useState([]); 
+  const [planningBlocks, setPlanningBlocks] = useState([]);
 
 
-  // Effect to load notes when a meeting is selected
+  // Effect to load notes AND planning blocks when a meeting is selected
   useEffect(() => {
     if (selectedMeeting) {
       setNoteContent(selectedMeeting.notes || '');
+      setPlanningBlocks(selectedMeeting.planningBlocks || []);
     } else {
       setNoteContent('');
+      setPlanningBlocks([]);
     }
   }, [selectedMeeting]);
 
 
-  // Helper to find assignee by first name (VERY simple AI proxy)
+  // Helper to find assignee by first name 
   const findAssigneeId = (text) => {
     const userMap = MOCK_USERS.reduce((acc, user) => {
       const firstName = user.name.split(' ')[0].toLowerCase();
@@ -39,9 +119,8 @@ const AgendaBoard = ({ meetings, setMeetings, setTasks, currentUser, events, set
     return MOCK_USERS[0].id; // Default to President if not found
   };
     
-  // --- AGENDA MANAGEMENT FUNCTIONS ---
+  // --- AGENDA MANAGEMENT FUNCTIONS (Confirmed working) ---
 
-  // Adds a new main item
   const handleAddMainItem = () => {
     setNewAgenda(prev => [
       ...prev,
@@ -49,12 +128,10 @@ const AgendaBoard = ({ meetings, setMeetings, setTasks, currentUser, events, set
     ]);
   };
   
-  // Removes a main agenda item and all its sub-items
   const handleRemoveItem = (id) => {
     setNewAgenda(prev => prev.filter(item => item.id !== id));
   };
 
-  // Updates a main item's title
   const handleUpdateItem = (id, title) => {
     setNewAgenda(prev => prev.map(item => {
       if (item.id === id) {
@@ -64,7 +141,6 @@ const AgendaBoard = ({ meetings, setMeetings, setTasks, currentUser, events, set
     }));
   };
   
-  // Adds a sub-item to a main item
   const handleAddSubItem = (mainId) => {
     setNewAgenda(prev => prev.map(item => {
       if (item.id === mainId) {
@@ -77,7 +153,6 @@ const AgendaBoard = ({ meetings, setMeetings, setTasks, currentUser, events, set
     }));
   };
 
-  // Updates a sub-item's title
   const handleUpdateSubItem = (mainId, subId, newTitle) => {
     setNewAgenda(prev => prev.map(mainItem => {
         if (mainItem.id === mainId) {
@@ -92,7 +167,6 @@ const AgendaBoard = ({ meetings, setMeetings, setTasks, currentUser, events, set
     }));
   };
   
-  // Removes a specific sub-item from a main agenda item
   const handleRemoveSubItem = (mainId, subId) => {
     setNewAgenda(prev => prev.map(mainItem => {
         if (mainItem.id === mainId) {
@@ -105,15 +179,54 @@ const AgendaBoard = ({ meetings, setMeetings, setTasks, currentUser, events, set
     }));
   };
 
+  // --- PLANNING BLOCK MANAGEMENT FUNCTIONS (FIXED) ---
+
+  const handleCreatePlanningBlock = (type) => {
+    const newBlock = {
+      id: `pb${Date.now()}`,
+      type: type, 
+      title: `New ${type.replace('_', ' ')}`,
+      data: type === 'EVENT_PLAN' 
+        ? { name: '', location: '', date: '', marketingStatus: 'Draft' } 
+        : { estimated: '', actual: '', category: '' },
+      status: 'ACTIVE',
+    };
+    setPlanningBlocks(prev => [...prev, newBlock]);
+  };
+
+  // 🚨 HARDENED FIX: Ensures immutability for nested objects
+  const handleUpdatePlanningBlock = (blockId, field, value) => {
+    setPlanningBlocks(prev => prev.map(block => {
+      if (block.id === blockId) {
+        const newBlockData = {
+            ...block.data,
+            [field]: value, // Apply the update
+        };
+        
+        return {
+          ...block,
+          data: newBlockData, // Return the block with the NEW data object
+        };
+      }
+      return block;
+    }));
+  };
+
+  const handleRemovePlanningBlock = (blockId) => {
+    setPlanningBlocks(prev => prev.filter(block => block.id !== blockId));
+  };
+
   // --- CORE AI PARSING LOGIC & FINALIZATION ---
   const handleGenerateTasksFromNotes = () => {
     if (!selectedMeeting || selectedMeeting.status === 'COMPLETED' || currentUser.role !== 'PRESIDENT') return;
 
     const actionRegex = /ACTION:\s*(.*?)(?:\s+Assignee:\s*(\w+))?(?:\s+Due:\s*(\S+))?(?:\s+Priority:\s*(HIGH|LOW))?/gi;
     let match;
+    
     const generatedTasks = [];
     const createdTaskIds = [];
 
+    // 1. Process notes line by line for 'ACTION:'
     while ((match = actionRegex.exec(noteContent)) !== null) {
       const [fullMatch, title, assigneeName, dueDate, priority] = match;
       const assigneeId = findAssigneeId(fullMatch); 
@@ -135,15 +248,29 @@ const AgendaBoard = ({ meetings, setMeetings, setTasks, currentUser, events, set
         console.warn("No 'ACTION:' items found to generate tasks. Proceeding with finalization.");
     }
 
+    // 2. Update global tasks and meeting status
     setTasks(prevTasks => [...prevTasks, ...generatedTasks]);
     
+    // Save the current state of planningBlocks back to the meeting object
     setMeetings(prevMeetings => prevMeetings.map(m => 
         m.id === selectedMeeting.id 
-            ? { ...m, notes: noteContent, status: 'COMPLETED', generatedTasks: createdTaskIds }
+            ? { 
+                ...m, 
+                notes: noteContent, 
+                planningBlocks: planningBlocks, 
+                status: 'COMPLETED', 
+                generatedTasks: createdTaskIds 
+              }
             : m
     ));
 
-    setSelectedMeeting(prev => ({ ...prev, notes: noteContent, status: 'COMPLETED', generatedTasks: createdTaskIds }));
+    setSelectedMeeting(prev => ({ 
+        ...prev, 
+        notes: noteContent, 
+        planningBlocks: planningBlocks, 
+        status: 'COMPLETED', 
+        generatedTasks: createdTaskIds 
+    }));
     
     console.log(`Successfully finalized meeting. Tasks created: ${generatedTasks.length}`);
   };
@@ -152,11 +279,11 @@ const AgendaBoard = ({ meetings, setMeetings, setTasks, currentUser, events, set
     if (selectedMeeting && currentUser.role === 'PRESIDENT') {
       setMeetings(prevMeetings => prevMeetings.map(m => 
         m.id === selectedMeeting.id 
-            ? { ...m, notes: noteContent }
+            ? { ...m, notes: noteContent, planningBlocks: planningBlocks }
             : m
       ));
-      setSelectedMeeting(prev => ({ ...prev, notes: noteContent }));
-      alert('Notes saved!');
+      setSelectedMeeting(prev => ({ ...prev, notes: noteContent, planningBlocks: planningBlocks }));
+      alert('Notes and Planning Blocks saved!');
     }
   };
 
@@ -175,6 +302,7 @@ const AgendaBoard = ({ meetings, setMeetings, setTasks, currentUser, events, set
       notes: '',
       status: 'PLANNED',
       generatedTasks: [],
+      planningBlocks: [], 
     };
 
     setMeetings(prevMeetings => [...prevMeetings, newMeeting]);
@@ -190,11 +318,12 @@ const AgendaBoard = ({ meetings, setMeetings, setTasks, currentUser, events, set
 
     setNewMeetingTitle('');
     setNewMeetingDate('');
-    setNewAgenda([]); // Reset the structured agenda
+    setNewAgenda([]); 
   };
 
   const upcomingMeetings = meetings.filter(m => m.status === 'PLANNED').sort((a, b) => new Date(a.date) - new Date(b.date));
   const pastMeetings = meetings.filter(m => m.status === 'COMPLETED').sort((a, b) => new Date(b.date) - new Date(a.date));
+
 
   return (
     <div className="flex gap-6 h-full">
@@ -314,7 +443,7 @@ const AgendaBoard = ({ meetings, setMeetings, setTasks, currentUser, events, set
         ))}
       </div>
 
-      {/* Main Content: Agenda & Note Taking */}
+      {/* Main Content: Agenda, Planning Blocks & Note Taking */}
       <div className="flex-1 bg-white rounded-xl shadow p-6 max-h-[70vh] overflow-y-auto">
         {!selectedMeeting ? (
           <div className="text-center py-20 text-gray-400">
@@ -335,7 +464,7 @@ const AgendaBoard = ({ meetings, setMeetings, setTasks, currentUser, events, set
                 </p>
               </div>
               <div className='space-x-2'>
-                {/* 🚨 ONLY THE FINALIZE BUTTON REMAINS HERE */}
+                {/* FINALIZE BUTTON */}
                 {selectedMeeting.status === 'PLANNED' && currentUser.role === 'PRESIDENT' ? (
                   <button 
                     onClick={handleGenerateTasksFromNotes}
@@ -352,7 +481,7 @@ const AgendaBoard = ({ meetings, setMeetings, setTasks, currentUser, events, set
               </div>
             </div>
 
-            {/* UPDATED AGENDA DISPLAY - SHOWING NESTED STRUCTURE */}
+            {/* PLANNED AGENDA DISPLAY */}
             <h3 className="text-lg font-semibold text-gray-700 mb-2">Planned Agenda</h3>
             <ul className="list-disc list-inside bg-gray-50 p-4 rounded-lg mb-6">
                 {selectedMeeting.agendaItems.length > 0 ? (
@@ -373,25 +502,56 @@ const AgendaBoard = ({ meetings, setMeetings, setTasks, currentUser, events, set
                     <li className="text-sm text-gray-400 italic">No specific agenda items set.</li>
                 )}
             </ul>
+            
+            {/* LIVE PLANNING BLOCKS SECTION */}
+            <h3 className="text-xl font-bold text-indigo-700 mt-6 border-b pb-2 mb-4 flex justify-between items-center">
+                Live Planning Data
+                {selectedMeeting.status === 'PLANNED' && currentUser.role === 'PRESIDENT' && (
+                    <div className="space-x-2">
+                        <button 
+                            onClick={() => handleCreatePlanningBlock('EVENT_PLAN')}
+                            className="px-3 py-1 text-xs bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center"
+                        >
+                            <Package size={14} className="mr-1" /> Add Event Block
+                        </button>
+                    </div>
+                )}
+            </h3>
+            
+            <div className="space-y-4">
+                {planningBlocks.length === 0 ? (
+                    <p className="text-gray-500 italic text-sm">No structured planning items added for this meeting yet.</p>
+                ) : (
+                    planningBlocks.map(block => (
+                        <PlanningBlockRenderer 
+                            key={block.id} 
+                            block={block} 
+                            onUpdate={handleUpdatePlanningBlock}
+                            onRemove={handleRemovePlanningBlock}
+                            isEditable={selectedMeeting.status === 'PLANNED' && currentUser.role === 'PRESIDENT'}
+                        />
+                    ))
+                )}
+            </div>
 
             {/* Note Taking Area */}
-            <h3 className="text-lg font-semibold text-gray-700 mb-2 flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-gray-700 mb-2 mt-6 flex justify-between items-center">
                 Meeting Notes / Minutes
-                {/* 🚨 REPOSITIONED SAVE NOTES BUTTON HERE */}
+                {/* REPOSITIONED SAVE NOTES BUTTON HERE */}
                 {selectedMeeting.status === 'PLANNED' && currentUser.role === 'PRESIDENT' && (
                     <button 
                         onClick={handleSaveMeeting}
                         className="px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
                     >
-                        Save Notes
+                        Save Notes & Planning
                     </button>
                 )}
             </h3>
             <textarea 
               className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[250px] font-mono text-sm"
               placeholder={currentUser.role === 'PRESIDENT' ? 
-                           `Enter official notes here. Use "ACTION: Task Assignee: Name Due: Date" to generate tasks.` :
-                           `Viewing official notes. Take your personal notes here if needed.`}
+                           `Enter official minutes here. Use "ACTION: Task Assignee: Name Due: Date" to generate tasks. (Structured planning details are above).` :
+                           `Viewing official notes.`}
               value={noteContent}
               onChange={(e) => setNoteContent(e.target.value)}
               disabled={selectedMeeting.status === 'COMPLETED' || currentUser.role !== 'PRESIDENT'}
