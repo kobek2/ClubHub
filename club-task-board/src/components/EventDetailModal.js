@@ -1,74 +1,81 @@
-// --- EVENT DETAIL MODAL ---
-
 // src/components/EventDetailModal.js
 
-import React from 'react'; // Basic React import
-// 🚨 FIX: Import icons
-import { Calendar, X, MapPin } from 'lucide-react';
-// 🚨 FIX: Import StatusBadge component (assuming you moved it)
-import StatusBadge from './StatusBadge'; // Adjust path if needed
-// 🚨 FIX: Import MOCK_USERS
+import React from 'react';
+import {X, MapPin, CheckCircle2 } from 'lucide-react';
+import StatusBadge from './StatusBadge'; 
 import { MOCK_USERS } from '../utils/mockData';
-// ... (rest of the component code)
 
-
-const EventDetailModal = ({ event, tasks, onClose }) => {
-    
-    // ✅ FIX APPLIED: Check for null event immediately
-    if (!event) return null;
-
-    // Now it's safe to access event.id
-    const relatedTasks = tasks.filter(t => t.eventId === event.id);
+const EventDetailModal = ({ events, tasks, onClose }) => {
+    // Check if there are any events to show
+    if (!events || events.length === 0) return null;
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-                <div className="bg-indigo-600 text-white p-6 rounded-t-2xl flex justify-between items-center">
-                    <h2 className="text-xl font-bold">{event.title}</h2>
-                    <button onClick={onClose} className="text-indigo-200 hover:text-white">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+                {/* Modal Header */}
+                <div className="bg-indigo-900 text-white p-6 rounded-t-2xl flex justify-between items-center sticky top-0">
+                    <div>
+                        <h2 className="text-xl font-bold">Schedule for {new Date(events[0].date).toLocaleDateString()}</h2>
+                        <p className="text-indigo-200 text-xs">{events.length} Event{events.length > 1 ? 's' : ''} scheduled</p>
+                    </div>
+                    <button onClick={onClose} className="text-indigo-300 hover:text-white transition-colors">
                         <X size={24} />
                     </button>
                 </div>
                 
-                <div className="p-6 space-y-4">
-                    <div className="flex items-center text-sm text-gray-700">
-                        <Calendar size={16} className="mr-2 text-indigo-500" />
-                        <span className="font-semibold mr-2">Date:</span> 
-                        {new Date(event.date).toLocaleDateString()}
-                    </div>
-                    <div className="flex items-center text-sm text-gray-700">
-                        <MapPin size={16} className="mr-2 text-indigo-500" />
-                        <span className="font-semibold mr-2">Location:</span> 
-                        {event.location || 'TBD'}
-                    </div>
-                    <p className="text-gray-800 mt-4 text-sm">
-                        <span className="font-semibold block mb-1">Description:</span>
-                        {event.description || 'No description provided.'}
-                    </p>
-
-                    <h3 className="text-md font-bold pt-3 border-t mt-4 text-gray-800">Assigned Tasks ({relatedTasks.length})</h3>
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                        {relatedTasks.length > 0 ? (
-                            relatedTasks.map(task => {
-                                const assignee = MOCK_USERS.find(u => u.id === task.assigneeId);
-                                return (
-                                    <div key={task.id} className="p-3 bg-gray-50 rounded-lg border flex justify-between items-center">
-                                        <div className="text-sm font-medium">{task.title}</div>
-                                        <div className="flex items-center space-x-2">
-                                            <StatusBadge status={task.status} />
-                                            <span className="text-xs text-gray-600">{assignee?.name.split(' ')[0]}</span>
-                                        </div>
+                {/* Scrollable Content */}
+                <div className="p-6 space-y-8 overflow-y-auto">
+                    {events.map((event, index) => {
+                        const relatedTasks = tasks.filter(t => t.eventId === event.id);
+                        
+                        return (
+                            <div key={event.id} className={`${index !== 0 ? 'border-t pt-8' : ''}`}>
+                                <div className="flex items-center justify-between mb-2">
+                                    <h3 className="text-lg font-bold text-indigo-700">{event.title}</h3>
+                                    <div className="flex items-center text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                        <MapPin size={12} className="mr-1" />
+                                        {event.location || 'TBD'}
                                     </div>
-                                );
-                            })
-                        ) : (
-                            <p className="text-sm text-gray-400">No tasks are currently linked to this event.</p>
-                        )}
-                    </div>
+                                </div>
+                                
+                                <p className="text-sm text-gray-600 mb-4 italic">
+                                    {event.description || 'No description provided.'}
+                                </p>
+
+                                <div className="space-y-2">
+                                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center">
+                                        <CheckCircle2 size={10} className="mr-1" /> Linked Tasks
+                                    </h4>
+                                    {relatedTasks.length > 0 ? (
+                                        relatedTasks.map(task => {
+                                            const assignee = MOCK_USERS.find(u => u.id === task.assigneeId);
+                                            return (
+                                                <div key={task.id} className="p-3 bg-gray-50 rounded-lg border border-gray-100 flex justify-between items-center shadow-sm">
+                                                    <span className="text-sm font-medium text-gray-700">{task.title}</span>
+                                                    <div className="flex items-center space-x-3">
+                                                        <StatusBadge status={task.status} />
+                                                        <span className="text-xs font-semibold text-indigo-600">
+                                                            {assignee?.name.split(' ')[0]}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <p className="text-xs text-gray-400 italic py-2">No tasks for this event.</p>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
 
-                <div className="p-4 border-t flex justify-end">
-                    <button onClick={onClose} className="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200">
+                {/* Footer */}
+                <div className="p-4 border-t bg-gray-50 rounded-b-2xl flex justify-end">
+                    <button 
+                        onClick={onClose} 
+                        className="px-6 py-2 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                    >
                         Close
                     </button>
                 </div>
