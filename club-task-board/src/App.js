@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Plus, Clock, X, Trash2, ArrowRight } from 'lucide-react';
+// Removed 'Clock' as it was unused
+import { Plus, X, Trash2, ArrowRight } from 'lucide-react';
 import useLocalStorage from './hooks/useLocalStorage';
 import CalendarGrid from './components/CalendarGrid.js';
 import AgendaBoard from './components/AgendaBoard.js';
@@ -40,7 +41,9 @@ export default function App() {
       ...t,
       id: `t${Date.now()}-${idx}`,
       status: 'TODO',
-      eventId: eventId
+      eventId: eventId,
+      assigneeId: t.assigneeId || MOCK_USERS[0].id,
+      priority: t.priority || 'LOW'
     }));
 
     setEvents(prev => [...prev, createdEvent]);
@@ -82,11 +85,12 @@ export default function App() {
       {/* --- TOP NAVIGATION --- */}
       <nav className="bg-indigo-900 text-white p-4 shadow-lg sticky top-0 z-10">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-        <div 
-          onClick={() => setView('TASK_BOARD')} 
-          className="flex items-center space-x-2 cursor-pointer"
-        >
-            <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center font-bold">C</div>
+          {/* ✅ FIXED: Combined duplicate classNames and props */}
+          <div 
+            onClick={() => setView('TASK_BOARD')} 
+            className="flex items-center space-x-2 cursor-pointer group"
+          >
+            <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center font-bold group-hover:bg-indigo-400 transition-colors">C</div>
             <span className="font-bold text-lg tracking-wide">ClubHub</span>
           </div>
           
@@ -98,7 +102,7 @@ export default function App() {
                 value={currentUser.id}
                 onChange={(e) => setCurrentUser(MOCK_USERS.find(u => u.id === e.target.value))}
               >
-                {MOCK_USERS.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                {MOCK_USERS.map(u => <option key={u.id} value={u.id} className="text-gray-800">{u.name}</option>)}
               </select>
             </div>
             
@@ -122,25 +126,25 @@ export default function App() {
           <div className="flex space-x-3">
             <button 
                 onClick={() => setView('EVENTS_AND_TASKS')} 
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${view === 'EVENTS_AND_TASKS' ? 'bg-white text-indigo-600 shadow' : 'bg-transparent text-gray-600 hover:bg-gray-200'}`}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${view === 'EVENTS_AND_TASKS' ? 'bg-white text-indigo-600 shadow-sm border-b-2 border-indigo-600' : 'bg-transparent text-gray-600 hover:bg-gray-200'}`}
             >
                 Roadmap
             </button>
             <button 
                 onClick={() => setView('CALENDAR')} 
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${view === 'CALENDAR' ? 'bg-white text-indigo-600 shadow' : 'bg-transparent text-gray-600 hover:bg-gray-200'}`}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${view === 'CALENDAR' ? 'bg-white text-indigo-600 shadow-sm border-b-2 border-indigo-600' : 'bg-transparent text-gray-600 hover:bg-gray-200'}`}
             >
                 Calendar
             </button>
             <button 
                 onClick={() => setView('TASK_BOARD')} 
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${view === 'TASK_BOARD' ? 'bg-white text-indigo-600 shadow' : 'bg-transparent text-gray-600 hover:bg-gray-200'}`}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${view === 'TASK_BOARD' ? 'bg-white text-indigo-600 shadow-sm border-b-2 border-indigo-600' : 'bg-transparent text-gray-600 hover:bg-gray-200'}`}
             >
                 Board
             </button>
             <button 
                 onClick={() => setView('AGENDA')} 
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${view === 'AGENDA' ? 'bg-white text-indigo-600 shadow' : 'bg-transparent text-gray-600 hover:bg-gray-200'}`}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${view === 'AGENDA' ? 'bg-white text-indigo-600 shadow-sm border-b-2 border-indigo-600' : 'bg-transparent text-gray-600 hover:bg-gray-200'}`}
             >
                 Agenda
             </button>
@@ -148,7 +152,7 @@ export default function App() {
             {currentUser.role === 'PRESIDENT' && (
               <button 
                 onClick={() => setShowEventModal(true)}
-                className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium shadow-md transition-all"
+                className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium shadow-md transition-all active:scale-95"
               >
                 <Plus size={16} className="mr-2" />
                 New Event
@@ -213,20 +217,26 @@ export default function App() {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="bg-indigo-900 text-white p-6 rounded-t-2xl flex justify-between items-center sticky top-0 z-10">
               <h2 className="text-xl font-bold">Create New Event</h2>
-              <button onClick={() => setShowEventModal(false)} className="text-indigo-300 hover:text-white">
+              <button onClick={() => setShowEventModal(false)} className="text-indigo-300 hover:text-white transition-colors">
                 <X size={24} />
               </button>
             </div>
             <div className="p-6 space-y-6">
               <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700">Event Title</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Event Title</label>
                     <input type="text" className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none" value={newEvent.title} onChange={(e) => setNewEvent({...newEvent, title: e.target.value})} />
                   </div>
-                  <input type="date" className="border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none" value={newEvent.date} onChange={(e) => setNewEvent({...newEvent, date: e.target.value})} />
-                  <input type="text" placeholder="Location" className="border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none" value={newEvent.location} onChange={(e) => setNewEvent({...newEvent, location: e.target.value})} />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                    <input type="date" className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none" value={newEvent.date} onChange={(e) => setNewEvent({...newEvent, date: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                    <input type="text" placeholder="Location" className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none" value={newEvent.location} onChange={(e) => setNewEvent({...newEvent, location: e.target.value})} />
+                  </div>
                   <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700">Description</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                     <textarea className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none" rows="2" value={newEvent.description} onChange={(e) => setNewEvent({...newEvent, description: e.target.value})} />
                   </div>
               </div>
@@ -234,22 +244,22 @@ export default function App() {
               <div className="border-t pt-4">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-bold text-gray-700 uppercase text-xs tracking-widest">Delegated Tasks</h3>
-                  <button onClick={addTempTask} className="text-indigo-600 text-sm font-bold hover:underline">+ Add Task</button>
+                  <button onClick={addTempTask} className="text-indigo-600 text-sm font-bold hover:underline transition-all">+ Add Task</button>
                 </div>
                 {newTasks.map((task, idx) => (
-                    <div key={idx} className="flex gap-2 mb-2 bg-gray-50 p-2 rounded border border-gray-200">
-                        <input className="flex-grow p-1 text-sm bg-transparent border-b focus:border-indigo-500 outline-none" placeholder="Task Name" value={task.title} onChange={(e) => updateTempTask(idx, 'title', e.target.value)} />
-                        <select className="text-sm bg-transparent" value={task.assigneeId} onChange={(e) => updateTempTask(idx, 'assigneeId', e.target.value)}>
+                    <div key={idx} className="flex gap-2 mb-2 bg-gray-50 p-2 rounded border border-gray-200 items-center animate-in slide-in-from-top-1 duration-200">
+                        <input className="flex-grow p-1 text-sm bg-transparent border-b border-transparent focus:border-indigo-500 outline-none" placeholder="Task Name" value={task.title} onChange={(e) => updateTempTask(idx, 'title', e.target.value)} />
+                        <select className="text-xs bg-white border rounded px-1 py-1" value={task.assigneeId} onChange={(e) => updateTempTask(idx, 'assigneeId', e.target.value)}>
                             {MOCK_USERS.map(u => <option key={u.id} value={u.id}>{u.name.split(' ')[0]}</option>)}
                         </select>
-                        <button onClick={() => removeTempTask(idx)} className="text-gray-400 hover:text-red-500"><Trash2 size={14} /></button>
+                        <button onClick={() => removeTempTask(idx)} className="text-gray-400 hover:text-red-500 transition-colors p-1"><Trash2 size={16} /></button>
                     </div>
                 ))}
               </div>
             </div>
             <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
-              <button onClick={() => setShowEventModal(false)} className="text-gray-500 font-medium">Cancel</button>
-              <button onClick={handleCreateEvent} className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold flex items-center shadow-lg hover:bg-indigo-700 transition-all">
+              <button onClick={() => setShowEventModal(false)} className="text-gray-500 font-medium hover:text-gray-700">Cancel</button>
+              <button onClick={handleCreateEvent} className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold flex items-center shadow-lg hover:bg-indigo-700 transition-all active:scale-95">
                 Create Event & Tasks <ArrowRight size={16} className="ml-2" />
               </button>
             </div>
