@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Plus, X, Trash2, ArrowRight } from 'lucide-react';
 
 // FIREBASE HOOKS
-import useFirestore from './Hooks/useFirestore.js'; 
+import useFirestore from './Hooks/useFirestore'; 
 
 // COMPONENTS
 import CalendarGrid from './Components/CalendarGrid.js';
