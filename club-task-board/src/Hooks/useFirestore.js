@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from '../firebase'; // This assumes your firebase.js is in /src
+import { db } from '../firebase'; 
 import { 
   collection, 
   onSnapshot, 
@@ -13,6 +13,12 @@ export default function useFirestore(collectionName) {
   const [data, setData] = useState([]);
 
   useEffect(() => {
+    // Safety check: if db didn't initialize, don't try to query
+    if (!db) {
+      console.error("Firebase Firestore (db) is not initialized.");
+      return;
+    }
+
     // 1. Reference the collection in Firestore
     const q = query(collection(db, collectionName));
 
@@ -23,6 +29,8 @@ export default function useFirestore(collectionName) {
         ...doc.data()
       }));
       setData(results);
+    }, (error) => {
+      console.error("Firestore listener error:", error);
     });
 
     // 3. Clean up the listener when the component unmounts
