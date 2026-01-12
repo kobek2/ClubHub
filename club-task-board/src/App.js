@@ -1,25 +1,31 @@
 import React, { useState } from 'react';
-// Removed 'Clock' as it was unused
 import { Plus, X, Trash2, ArrowRight } from 'lucide-react';
-import useLocalStorage from './hooks/useLocalStorage';
+
+// FIREBASE HOOKS
+import useFirestore from './hooks/useFirestore'; 
+
+// COMPONENTS
 import CalendarGrid from './components/CalendarGrid.js';
 import AgendaBoard from './components/AgendaBoard.js';
 import EventDetailModal from './components/EventDetailModal.js';
 import KanbanColumn from './components/KanbanColumn.js';
-import { MOCK_USERS } from './utils/mockData';
 import EventsPage from './components/EventsPage.js';
 
+// UTILS
+import { MOCK_USERS } from './utils/mockData';
+
 export default function App() {
-  // --- STATE ---
+  // --- USER STATE ---
   const [currentUser, setCurrentUser] = useState(MOCK_USERS[0]);
-  const [tasks, setTasks] = useLocalStorage('clubCommandTasks', []); 
-  const [events, setEvents] = useLocalStorage('clubCommandEvents', []); 
-  const [meetings, setMeetings] = useLocalStorage('clubCommandMeetings', []); 
   
-  // View states: 'TASK_BOARD', 'CALENDAR', 'AGENDA', 'EVENTS_AND_TASKS'
+  // --- CLOUD DATA (FIREBASE) ---
+  // These hooks replace useLocalStorage and sync with Firestore automatically
+  const [tasks, addTask, updateTask] = useFirestore('tasks');
+  const [events, addEvent] = useFirestore('events');
+  const [meetings, addMeeting] = useFirestore('meetings'); 
+  
+  // --- UI STATE ---
   const [view, setView] = useState('TASK_BOARD'); 
-  
-  // Modal States
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedDateEvents, setSelectedDateEvents] = useState([]); 
   const [newEvent, setNewEvent] = useState({ title: '', date: '', location: '', description: '' });
@@ -31,29 +37,41 @@ export default function App() {
     setSelectedDateEvents(eventsArray); 
   };
 
-  const handleCreateEvent = () => {
+  const handleCreateEvent = async () => {
     if (!newEvent.title || !newEvent.date) return;
 
+    // 1. Create the Event in Firestore
     const eventId = `e${Date.now()}`;
-    const createdEvent = { ...newEvent, id: eventId };
+    await addEvent({ 
+        ...newEvent, 
+        id: eventId,
+        createdAt: new Date().toISOString() 
+    });
 
-    const createdTasks = newTasks.map((t, idx) => ({
-      ...t,
-      id: `t${Date.now()}-${idx}`,
-      status: 'TODO',
-      eventId: eventId,
-      assigneeId: t.assigneeId || MOCK_USERS[0].id,
-      priority: t.priority || 'LOW'
-    }));
-
-    setEvents(prev => [...prev, createdEvent]);
-    setTasks(prev => [...prev, ...createdTasks]);
+    // 2. Create the associated tasks in Firestore
+    for (const t of newTasks) {
+      await addTask({
+        ...t,
+        status: 'TODO',
+        eventId: eventId,
+        assigneeId: t.assigneeId || MOCK_USERS[0].id,
+        priority: t.priority || 'LOW',
+        createdAt: new Date().toISOString()
+      });
+    }
     
+    // 3. Reset Modal
     setShowEventModal(false);
     setNewEvent({ title: '', date: '', location: '', description: '' });
     setNewTasks([]);
   };
 
+  const moveTaskStatus = async (taskId, newStatus) => {
+    // Updates the status property for that specific document ID in Firestore
+    await updateTask(taskId, { status: newStatus });
+  };
+
+  // Temporary local state helpers for the "New Event" modal
   const addTempTask = () => {
     setNewTasks([...newTasks, { title: '', assigneeId: MOCK_USERS[0].id, priority: 'LOW', dueDate: '' }]);
   };
@@ -69,15 +87,6 @@ export default function App() {
     updated.splice(index, 1);
     setNewTasks(updated);
   };
-  
-  const moveTaskStatus = (taskId, newStatus) => {
-    setTasks(prevTasks => prevTasks.map(t => {
-        if (t.id === taskId) {
-            return { ...t, status: newStatus };
-        }
-        return t;
-    }));
-  };
 
   return (
     <div className="min-h-screen bg-gray-100 font-sans text-gray-800">
@@ -85,7 +94,6 @@ export default function App() {
       {/* --- TOP NAVIGATION --- */}
       <nav className="bg-indigo-900 text-white p-4 shadow-lg sticky top-0 z-10">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          {/* ✅ FIXED: Combined duplicate classNames and props */}
           <div 
             onClick={() => setView('TASK_BOARD')} 
             className="flex items-center space-x-2 cursor-pointer group"
@@ -164,7 +172,7 @@ export default function App() {
         {/* --- MAIN CONTENT AREA --- */}
 
         {view === 'EVENTS_AND_TASKS' && (
-            <EventsPage events={events} tasks={tasks} setTasks={setTasks} />
+            <EventsPage events={events} tasks={tasks} />
         )}
 
         {view === 'TASK_BOARD' && (
@@ -198,9 +206,10 @@ export default function App() {
 
         {view === 'AGENDA' && (
             <AgendaBoard 
-                meetings={meetings} setMeetings={setMeetings}
-                setTasks={setTasks} currentUser={currentUser}
-                events={events} setEvents={setEvents}
+                meetings={meetings} 
+                tasks={tasks} 
+                currentUser={currentUser}
+                events={events} 
             />
         )}
       </div>
@@ -244,15 +253,15 @@ export default function App() {
               <div className="border-t pt-4">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-bold text-gray-700 uppercase text-xs tracking-widest">Delegated Tasks</h3>
-                  <button onClick={addTempTask} className="text-indigo-600 text-sm font-bold hover:underline transition-all">+ Add Task</button>
+                  <button onClick={addTempTask} className="text-indigo-600 text-sm font-bold hover:underline">+ Add Task</button>
                 </div>
                 {newTasks.map((task, idx) => (
-                    <div key={idx} className="flex gap-2 mb-2 bg-gray-50 p-2 rounded border border-gray-200 items-center animate-in slide-in-from-top-1 duration-200">
+                    <div key={idx} className="flex gap-2 mb-2 bg-gray-50 p-2 rounded border border-gray-200 items-center">
                         <input className="flex-grow p-1 text-sm bg-transparent border-b border-transparent focus:border-indigo-500 outline-none" placeholder="Task Name" value={task.title} onChange={(e) => updateTempTask(idx, 'title', e.target.value)} />
                         <select className="text-xs bg-white border rounded px-1 py-1" value={task.assigneeId} onChange={(e) => updateTempTask(idx, 'assigneeId', e.target.value)}>
                             {MOCK_USERS.map(u => <option key={u.id} value={u.id}>{u.name.split(' ')[0]}</option>)}
                         </select>
-                        <button onClick={() => removeTempTask(idx)} className="text-gray-400 hover:text-red-500 transition-colors p-1"><Trash2 size={16} /></button>
+                        <button onClick={() => removeTempTask(idx)} className="text-gray-400 hover:text-red-500 p-1"><Trash2 size={16} /></button>
                     </div>
                 ))}
               </div>

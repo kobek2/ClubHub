@@ -51,11 +51,11 @@ const CalendarGrid = ({ events, tasks, onEventClick }) => {
         calendarCells.push(
             
             <div 
-        key={day} 
-        className={`p-2 border border-gray-200 h-28 overflow-hidden relative group transition-all ${hasEvents ? 'cursor-pointer hover:bg-indigo-50' : 'hover:bg-gray-50'} ${isToday ? 'bg-indigo-50 ring-2 ring-indigo-500 z-10' : ''}`}
-        // ✅ FIX: Pass all events for that day instead of just index 0
-        onClick={() => hasEvents && onEventClick(dayData.events)}
-    >
+                key={day} 
+                className={`p-2 border border-gray-200 h-28 overflow-hidden relative group transition-all ${hasEvents ? 'cursor-pointer hover:bg-indigo-50' : 'hover:bg-gray-50'} ${isToday ? 'bg-indigo-50 ring-2 ring-indigo-500 z-10' : ''}`}
+             // ✅ FIX: Pass all events for that day instead of just index 0
+                onClick={() => hasEvents && onEventClick(dayData.events)}
+            >
                 <div className={`text-sm font-bold ${isToday ? 'text-indigo-900' : hasEvents ? 'text-indigo-700' : 'text-gray-900'}`}>{day}</div>
                 
                 {hasEvents && (
