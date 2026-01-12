@@ -203,15 +203,15 @@ export default function App() {
             <CalendarGrid events={events} tasks={tasks} onEventClick={handleCalendarEventClick} />
           </div>
         )}
-
-        {view === 'AGENDA' && (
-            <AgendaBoard 
-                meetings={meetings} 
-                tasks={tasks} 
-                currentUser={currentUser}
-                events={events} 
-            />
-        )}
+{view === 'AGENDA' && (
+    <AgendaBoard 
+        meetings={meetings} 
+        setMeetings={addMeeting} // Map the Firestore 'add' function to the setter prop
+        setTasks={addTask}       // Map the Firestore 'add' function to the setter prop
+        currentUser={currentUser}
+        setEvents={addEvent}     // Map the Firestore 'add' function to the setter prop
+    />
+)}
       </div>
 
       {/* --- MODALS --- */}
