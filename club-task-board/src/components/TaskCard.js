@@ -1,7 +1,7 @@
 import React from 'react';
 import { Calendar, Clock, MessageSquare } from 'lucide-react'; 
 import StatusBadge from './StatusBadge'; 
-import { MOCK_USERS } from '../utils/mockData'; 
+import { MOCK_USERS } from '../Utils/mockData'; 
 
   const TaskCard = ({ task, currentUser, moveTaskStatus, events, meetings }) => {
     // src/components/TaskCard.js

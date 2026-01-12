@@ -3,7 +3,7 @@
 import React from 'react';
 import {X, MapPin, CheckCircle2 } from 'lucide-react';
 import StatusBadge from './StatusBadge'; 
-import { MOCK_USERS } from '../utils/mockData';
+import { MOCK_USERS } from '../Utils/mockData';
 
 const EventDetailModal = ({ events, tasks, onClose }) => {
     // Check if there are any events to show

@@ -1,6 +1,6 @@
 import React from 'react'; // Removed useState
 import { Calendar, CheckCircle2, Circle, Clock, Trash2, Layout } from 'lucide-react'; // Removed Plus and ChevronRight
-import { MOCK_USERS } from '../utils/mockData';
+import { MOCK_USERS } from '../Utils/mockData';
 const EventsPage = ({ events, tasks, setTasks }) => {
     // Group tasks by eventId for a "Project" view
     const getTasksForEvent = (eventId) => tasks.filter(t => t.eventId === eventId);

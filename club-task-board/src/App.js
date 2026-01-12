@@ -2,17 +2,17 @@ import React, { useState } from 'react';
 import { Plus, X, Trash2, ArrowRight } from 'lucide-react';
 
 // FIREBASE HOOKS
-import useFirestore from './hooks/useFirestore'; 
+import useFirestore from './Hooks/useFirestore.js'; 
 
 // COMPONENTS
-import CalendarGrid from './components/CalendarGrid.js';
-import AgendaBoard from './components/AgendaBoard.js';
-import EventDetailModal from './components/EventDetailModal.js';
-import KanbanColumn from './components/KanbanColumn.js';
-import EventsPage from './components/EventsPage.js';
+import CalendarGrid from './Components/CalendarGrid.js';
+import AgendaBoard from './Components/AgendaBoard.js';
+import EventDetailModal from './Components/EventDetailModal.js';
+import KanbanColumn from './Components/KanbanColumn.js';
+import EventsPage from './Components/EventsPage.js';
 
 // UTILS
-import { MOCK_USERS } from './utils/mockData';
+import { MOCK_USERS } from './Utils/mockData.js';
 
 export default function App() {
   // --- USER STATE ---
