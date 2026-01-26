@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
-// src/firebase.ts
-import { initializeApp, FirebaseApp } from "firebase/app";
+// src/lib/firebase.ts
+import { initializeApp, FirebaseApp, getApps } from "firebase/app";
 import { getFirestore, Firestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
@@ -14,8 +14,13 @@ const firebaseConfig = {
   appId: "1:786777391504:web:e62ec3e2bec89a19813315"
 };
 
-// Initialize Firebase
-const app: FirebaseApp = initializeApp(firebaseConfig);
+// Initialize Firebase (prevent multiple initializations in Next.js)
+let app: FirebaseApp;
+if (getApps().length === 0) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApps()[0];
+}
 
 // Initialize Cloud Firestore (The Database)
 export const db: Firestore = getFirestore(app);
