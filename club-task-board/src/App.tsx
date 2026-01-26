@@ -5,35 +5,36 @@ import { Plus, X, Trash2, ArrowRight } from 'lucide-react';
 import useFirestore from './Hooks/useFirestore'; 
 
 // COMPONENTS
-import CalendarGrid from './Components/CalendarGrid.js';
-import AgendaBoard from './Components/AgendaBoard.js';
-import EventDetailModal from './Components/EventDetailModal.js';
-import KanbanColumn from './Components/KanbanColumn.js';
-import EventsPage from './Components/EventsPage.js';
+import CalendarGrid from './Components/CalendarGrid';
+import AgendaBoard from './Components/AgendaBoard';
+import EventDetailModal from './Components/EventDetailModal';
+import KanbanColumn from './Components/KanbanColumn';
+import EventsPage from './Components/EventsPage';
 
 // UTILS
-import { MOCK_USERS } from './Utils/mockData.js';
+import { MOCK_USERS } from './Utils/mockData';
+import { Task, Event, Meeting, User, ViewType } from './types';
 
 export default function App() {
   // --- USER STATE ---
-  const [currentUser, setCurrentUser] = useState(MOCK_USERS[0]);
+  const [currentUser, setCurrentUser] = useState<User>(MOCK_USERS[0]);
   
   // --- CLOUD DATA (FIREBASE) ---
   // These hooks replace useLocalStorage and sync with Firestore automatically
-  const [tasks, addTask, updateTask] = useFirestore('tasks');
-  const [events, addEvent] = useFirestore('events');
-  const [meetings, addMeeting] = useFirestore('meetings'); 
+  const [tasks, addTask, updateTask] = useFirestore<Task>('tasks');
+  const [events, addEvent] = useFirestore<Event>('events');
+  const [meetings, addMeeting] = useFirestore<Meeting>('meetings'); 
   
   // --- UI STATE ---
-  const [view, setView] = useState('TASK_BOARD'); 
+  const [view, setView] = useState<ViewType>('TASK_BOARD'); 
   const [showEventModal, setShowEventModal] = useState(false);
-  const [selectedDateEvents, setSelectedDateEvents] = useState([]); 
-  const [newEvent, setNewEvent] = useState({ title: '', date: '', location: '', description: '' });
-  const [newTasks, setNewTasks] = useState([]);
+  const [selectedDateEvents, setSelectedDateEvents] = useState<Event[]>([]); 
+  const [newEvent, setNewEvent] = useState<Omit<Event, 'id'>>({ title: '', date: '', location: '', description: '' });
+  const [newTasks, setNewTasks] = useState<Array<{ title: string; assigneeId: string; priority: string; dueDate: string }>>([]);
 
   // --- ACTIONS ---
 
-  const handleCalendarEventClick = (eventsArray) => {
+  const handleCalendarEventClick = (eventsArray: Event[]) => {
     setSelectedDateEvents(eventsArray); 
   };
 
@@ -55,7 +56,7 @@ export default function App() {
         status: 'TODO',
         eventId: eventId,
         assigneeId: t.assigneeId || MOCK_USERS[0].id,
-        priority: t.priority || 'LOW',
+        priority: (t.priority as 'LOW' | 'MEDIUM' | 'HIGH') || 'LOW',
         createdAt: new Date().toISOString()
       });
     }
@@ -66,9 +67,9 @@ export default function App() {
     setNewTasks([]);
   };
 
-  const moveTaskStatus = async (taskId, newStatus) => {
+  const moveTaskStatus = async (taskId: string, newStatus: string) => {
     // Updates the status property for that specific document ID in Firestore
-    await updateTask(taskId, { status: newStatus });
+    await updateTask(taskId, { status: newStatus as 'TODO' | 'DOING' | 'DONE' });
   };
 
   // Temporary local state helpers for the "New Event" modal
@@ -76,13 +77,13 @@ export default function App() {
     setNewTasks([...newTasks, { title: '', assigneeId: MOCK_USERS[0].id, priority: 'LOW', dueDate: '' }]);
   };
 
-  const updateTempTask = (index, field, value) => {
+  const updateTempTask = (index: number, field: string, value: string) => {
     const updated = [...newTasks];
-    updated[index][field] = value;
+    (updated[index] as any)[field] = value;
     setNewTasks(updated);
   };
 
-  const removeTempTask = (index) => {
+  const removeTempTask = (index: number) => {
     const updated = [...newTasks];
     updated.splice(index, 1);
     setNewTasks(updated);
@@ -108,7 +109,10 @@ export default function App() {
               <select 
                 className="bg-transparent text-sm font-semibold focus:outline-none cursor-pointer"
                 value={currentUser.id}
-                onChange={(e) => setCurrentUser(MOCK_USERS.find(u => u.id === e.target.value))}
+                onChange={(e) => {
+                  const user = MOCK_USERS.find(u => u.id === e.target.value);
+                  if (user) setCurrentUser(user);
+                }}
               >
                 {MOCK_USERS.map(u => <option key={u.id} value={u.id} className="text-gray-800">{u.name}</option>)}
               </select>
@@ -172,7 +176,7 @@ export default function App() {
         {/* --- MAIN CONTENT AREA --- */}
 
         {view === 'EVENTS_AND_TASKS' && (
-            <EventsPage events={events} tasks={tasks} />
+            <EventsPage events={events} tasks={tasks} setTasks={async (task: Omit<Task, 'id'> & { id?: string }) => await addTask(task)} />
         )}
 
         {view === 'TASK_BOARD' && (
@@ -203,15 +207,14 @@ export default function App() {
             <CalendarGrid events={events} tasks={tasks} onEventClick={handleCalendarEventClick} />
           </div>
         )}
-{view === 'AGENDA' && (
-    <AgendaBoard 
-        meetings={meetings} 
-        setMeetings={addMeeting} // Map the Firestore 'add' function to the setter prop
-        setTasks={addTask}       // Map the Firestore 'add' function to the setter prop
-        currentUser={currentUser}
-        setEvents={addEvent}     // Map the Firestore 'add' function to the setter prop
-    />
-)}
+        {view === 'AGENDA' && (
+          <AgendaBoard 
+            meetings={meetings} 
+            setMeetings={addMeeting}
+            currentUser={currentUser}
+            setEvents={addEvent}
+          />
+        )}
       </div>
 
       {/* --- MODALS --- */}
@@ -242,11 +245,11 @@ export default function App() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                    <input type="text" placeholder="Location" className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none" value={newEvent.location} onChange={(e) => setNewEvent({...newEvent, location: e.target.value})} />
+                    <input type="text" placeholder="Location" className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none" value={newEvent.location || ''} onChange={(e) => setNewEvent({...newEvent, location: e.target.value})} />
                   </div>
                   <div className="col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                    <textarea className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none" rows="2" value={newEvent.description} onChange={(e) => setNewEvent({...newEvent, description: e.target.value})} />
+                    <textarea className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none" rows={2} value={newEvent.description || ''} onChange={(e) => setNewEvent({...newEvent, description: e.target.value})} />
                   </div>
               </div>
 

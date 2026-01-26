@@ -6,11 +6,21 @@ import {
   query, 
   addDoc, 
   updateDoc, 
-  doc 
+  doc,
+  QuerySnapshot,
+  DocumentData
 } from 'firebase/firestore';
 
-export default function useFirestore(collectionName) {
-  const [data, setData] = useState([]);
+type UseFirestoreReturn<T> = [
+  T[],
+  (newItem: Omit<T, 'id'> & { id?: string }) => Promise<void>,
+  (id: string, updates: Partial<T>) => Promise<void>
+];
+
+export default function useFirestore<T extends { id?: string }>(
+  collectionName: string
+): UseFirestoreReturn<T> {
+  const [data, setData] = useState<T[]>([]);
 
   useEffect(() => {
     // Safety check: if db didn't initialize, don't try to query
@@ -23,11 +33,11 @@ export default function useFirestore(collectionName) {
     const q = query(collection(db, collectionName));
 
     // 2. Set up a real-time listener
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
       const results = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      }));
+      })) as T[];
       setData(results);
     }, (error) => {
       console.error("Firestore listener error:", error);
@@ -38,7 +48,7 @@ export default function useFirestore(collectionName) {
   }, [collectionName]);
 
   // Function to add a new document
-  const addData = async (newItem) => {
+  const addData = async (newItem: Omit<T, 'id'> & { id?: string }) => {
     try {
       await addDoc(collection(db, collectionName), newItem);
     } catch (error) {
@@ -47,10 +57,10 @@ export default function useFirestore(collectionName) {
   };
 
   // Function to update an existing document
-  const updateData = async (id, updates) => {
+  const updateData = async (id: string, updates: Partial<T>) => {
     try {
       const itemRef = doc(db, collectionName, id);
-      await updateDoc(itemRef, updates);
+      await updateDoc(itemRef, updates as any);
     } catch (error) {
       console.error("Error updating document: ", error);
     }

@@ -1,4 +1,6 @@
-export const MOCK_USERS = [
+import { User } from '../types';
+
+export const MOCK_USERS: User[] = [
   { id: 'u1', name: 'John (President)', role: 'PRESIDENT', avatar: 'bg-blue-500' },
   { id: 'u2', name: 'Tim (Finance)', role: 'BOARD', avatar: 'bg-green-500' },
   { id: 'u3', name: 'Smith (Marketing)', role: 'BOARD', avatar: 'bg-purple-500' },

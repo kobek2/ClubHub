@@ -1,7 +1,7 @@
 // Import the functions you need from the SDKs you need
-// src/firebase.js
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+// src/firebase.ts
+import { initializeApp, FirebaseApp } from "firebase/app";
+import { getFirestore, Firestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -13,8 +13,9 @@ const firebaseConfig = {
   messagingSenderId: "786777391504",
   appId: "1:786777391504:web:e62ec3e2bec89a19813315"
 };
+
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+const app: FirebaseApp = initializeApp(firebaseConfig);
 
 // Initialize Cloud Firestore (The Database)
-export const db = getFirestore(app);
+export const db: Firestore = getFirestore(app);

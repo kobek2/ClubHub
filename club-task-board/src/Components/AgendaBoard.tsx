@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Calendar, FileText, ClipboardList, Target, ChevronRight, X, Trash2, Save, List, Box } from 'lucide-react';
+import { Plus, Calendar, FileText, ClipboardList, Target, X, Trash2, Save } from 'lucide-react';
+import { Meeting, User, Task, Event, AgendaItem, AgendaSubItem } from '../types';
 
-const AgendaBoard = ({ meetings = [], setMeetings, currentUser }) => {
-  const [selectedMeeting, setSelectedMeeting] = useState(null);
+interface AgendaBoardProps {
+  meetings: Meeting[];
+  setMeetings: (meeting: Omit<Meeting, 'id'> & { id?: string }) => Promise<void>;
+  currentUser: User;
+  setTasks?: (task: Omit<Task, 'id'> & { id?: string }) => Promise<void>;
+  setEvents?: (event: Omit<Event, 'id'> & { id?: string }) => Promise<void>;
+}
+
+const AgendaBoard: React.FC<AgendaBoardProps> = ({ meetings = [], setMeetings, currentUser }) => {
+  const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [isCreatingNew, setIsCreatingNew] = useState(true);
   const [noteContent, setNoteContent] = useState('');
 
@@ -12,14 +21,15 @@ const AgendaBoard = ({ meetings = [], setMeetings, currentUser }) => {
   const [newMeetingDate, setNewMeetingDate] = useState(new Date().toISOString().split('T')[0]);
   
   // The Agenda Feature
-  const [newAgenda, setNewAgenda] = useState([
+  const [newAgenda, setNewAgenda] = useState<AgendaItem[]>([
     { id: 1, title: 'I. Standard Check-ins', subItems: [] }
   ]);
 
   // Handle Auto-Expand for all textareas
-  const handleAutoExpand = (e) => {
-    e.target.style.height = 'inherit';
-    e.target.style.height = `${e.target.scrollHeight}px`;
+  const handleAutoExpand = (e: React.FormEvent<HTMLTextAreaElement>) => {
+    const target = e.target as HTMLTextAreaElement;
+    target.style.height = 'inherit';
+    target.style.height = `${target.scrollHeight}px`;
   };
 
   // Sync content when a meeting is selected
@@ -31,31 +41,33 @@ const AgendaBoard = ({ meetings = [], setMeetings, currentUser }) => {
   }, [selectedMeeting]);
 
   // Sidebar Categorization
-  const upcomingMeetings = meetings.filter(m => new Date(m.date) >= new Date().setHours(0,0,0,0));
-  const pastMeetings = meetings.filter(m => new Date(m.date) < new Date().setHours(0,0,0,0));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const upcomingMeetings = meetings.filter(m => new Date(m.date) >= today);
+  const pastMeetings = meetings.filter(m => new Date(m.date) < today);
 
   // --- AGENDA & SUB-ITEM LOGIC ---
-  const handleSmartPaste = (mainId) => {
+  const handleSmartPaste = (mainId: number | string) => {
     const pasteArea = prompt("Paste your list (One item per line):");
     if (!pasteArea) return;
-    const items = pasteArea.split('\n').map(l => l.trim()).filter(l => l.length > 0)
+    const items: AgendaSubItem[] = pasteArea.split('\n').map(l => l.trim()).filter(l => l.length > 0)
       .map(line => ({ id: Math.random(), title: line }));
     setNewAgenda(prev => prev.map(item => item.id === mainId ? { ...item, subItems: [...item.subItems, ...items] } : item));
   };
 
   const handleAddMainItem = () => setNewAgenda(prev => [...prev, { id: Date.now(), title: '', subItems: [] }]);
-  const handleUpdateItem = (id, title) => setNewAgenda(prev => prev.map(item => item.id === id ? { ...item, title } : item));
-  const handleRemoveMainItem = (id) => setNewAgenda(prev => prev.filter(item => item.id !== id));
+  const handleUpdateItem = (id: number | string, title: string) => setNewAgenda(prev => prev.map(item => item.id === id ? { ...item, title } : item));
+  const handleRemoveMainItem = (id: number | string) => setNewAgenda(prev => prev.filter(item => item.id !== id));
   
-  const handleAddSubItem = (mainId) => setNewAgenda(prev => prev.map(item => 
+  const handleAddSubItem = (mainId: number | string) => setNewAgenda(prev => prev.map(item => 
     item.id === mainId ? { ...item, subItems: [...item.subItems, { id: Date.now(), title: '' }] } : item
   ));
   
-  const handleUpdateSubItem = (mainId, subId, title) => setNewAgenda(prev => prev.map(main => 
+  const handleUpdateSubItem = (mainId: number | string, subId: number | string, title: string) => setNewAgenda(prev => prev.map(main => 
     main.id === mainId ? { ...main, subItems: main.subItems.map(sub => sub.id === subId ? { ...sub, title } : sub) } : main
   ));
 
-  const handleRemoveSubItem = (mainId, subId) => setNewAgenda(prev => prev.map(main => 
+  const handleRemoveSubItem = (mainId: number | string, subId: number | string) => setNewAgenda(prev => prev.map(main => 
     main.id === mainId ? { ...main, subItems: main.subItems.filter(sub => sub.id !== subId) } : main
   ));
 
@@ -63,7 +75,7 @@ const AgendaBoard = ({ meetings = [], setMeetings, currentUser }) => {
   const handleCreateNewMeeting = async () => {
     if (!newMeetingTitle) return alert("Please enter a title.");
     
-    const newMeetingData = {
+    const newMeetingData: Omit<Meeting, 'id'> & { id?: string } = {
       title: newMeetingTitle,
       date: newMeetingDate,
       goal: newMeetingGoal,
@@ -163,14 +175,16 @@ const AgendaBoard = ({ meetings = [], setMeetings, currentUser }) => {
                   <div className="flex gap-2">
                     <textarea 
                       className="flex-1 font-bold bg-transparent border-b border-gray-300 outline-none focus:border-indigo-500 resize-none overflow-hidden py-1 h-auto" 
-                      rows="1" onInput={handleAutoExpand}
+                      rows={1} 
+                      onInput={handleAutoExpand}
                       placeholder="Topic Name (e.g., Financial Update)"
-                      value={main.title} onChange={e => handleUpdateItem(main.id, e.target.value)} 
+                      value={main.title} 
+                      onChange={e => handleUpdateItem(main.id, e.target.value)} 
                     />
                     <div className="flex gap-1">
-                        <button onClick={() => handleSmartPaste(main.id)} className="p-2 text-indigo-500 hover:bg-white rounded-lg transition-all" title="Smart Paste"><ClipboardList size={18}/></button>
-                        <button onClick={() => handleAddSubItem(main.id)} className="p-2 text-green-500 hover:bg-white rounded-lg transition-all" title="Add Sub-item"><Plus size={18}/></button>
-                        <button onClick={() => handleRemoveMainItem(main.id)} className="p-2 text-gray-300 hover:text-red-500 transition-all"><Trash2 size={18}/></button>
+                      <button onClick={() => handleSmartPaste(main.id)} className="p-2 text-indigo-500 hover:bg-white rounded-lg transition-all" title="Smart Paste"><ClipboardList size={18}/></button>
+                      <button onClick={() => handleAddSubItem(main.id)} className="p-2 text-green-500 hover:bg-white rounded-lg transition-all" title="Add Sub-item"><Plus size={18}/></button>
+                      <button onClick={() => handleRemoveMainItem(main.id)} className="p-2 text-gray-300 hover:text-red-500 transition-all"><Trash2 size={18}/></button>
                     </div>
                   </div>
                   
@@ -180,9 +194,11 @@ const AgendaBoard = ({ meetings = [], setMeetings, currentUser }) => {
                         <div className="mt-4 w-1.5 h-1.5 bg-indigo-300 rounded-full flex-shrink-0" />
                         <textarea 
                           className="flex-1 text-sm bg-white p-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-indigo-100 resize-none overflow-hidden h-auto shadow-sm" 
-                          rows="1" onInput={handleAutoExpand}
+                          rows={1} 
+                          onInput={handleAutoExpand}
                           placeholder="Sub-topic or detail..."
-                          value={sub.title} onChange={e => handleUpdateSubItem(main.id, sub.id, e.target.value)} 
+                          value={sub.title} 
+                          onChange={e => handleUpdateSubItem(main.id, sub.id, e.target.value)} 
                         />
                         <button onClick={() => handleRemoveSubItem(main.id, sub.id)} className="mt-2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><X size={16}/></button>
                       </div>
@@ -211,7 +227,6 @@ const AgendaBoard = ({ meetings = [], setMeetings, currentUser }) => {
                   <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase">{selectedMeeting.status}</span>
                 </div>
               </div>
-
             </div>
 
             {/* Primary Goal Section */}
@@ -242,8 +257,6 @@ const AgendaBoard = ({ meetings = [], setMeetings, currentUser }) => {
               </div>
             </section>
 
-
-
             {/* Meeting Notes */}
             <section className="space-y-4 pb-12">
               <div className="flex justify-between items-center">
@@ -262,10 +275,10 @@ const AgendaBoard = ({ meetings = [], setMeetings, currentUser }) => {
             </section>
           </div>
         ) : (
-            <div className="h-full flex flex-col items-center justify-center text-gray-300 space-y-4">
-                <FileText size={64} className="opacity-10" />
-                <p className="font-medium italic text-lg">Select a meeting from the sidebar to view details.</p>
-            </div>
+          <div className="h-full flex flex-col items-center justify-center text-gray-300 space-y-4">
+            <FileText size={64} className="opacity-10" />
+            <p className="font-medium italic text-lg">Select a meeting from the sidebar to view details.</p>
+          </div>
         )}
       </div>
     </div>
