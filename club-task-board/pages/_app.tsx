@@ -62,11 +62,19 @@ export default function App({ Component, pageProps }: AppProps) {
               {router.pathname === '/agenda' ? 'E-Board Agenda' : 
                router.pathname === '/calendar' ? 'Club Calendar' : 
                router.pathname === '/roadmap' ? 'Semester Roadmap' : 
+               router.pathname === '/events/history' ? 'Event history' :
+               router.pathname.startsWith('/events/') ? 'Event' :
                'Task Board'}
             </h1>
           </div>
-              
+        
           <div className="flex space-x-3">
+          <Link 
+              href="/events/history"
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${router.pathname.startsWith('/events/history') ? 'bg-white text-indigo-600 shadow-sm border-b-2 border-indigo-600' : 'bg-transparent text-gray-600 hover:bg-gray-200'}`}
+            >
+              Event history
+            </Link>
             <Link 
               href="/roadmap"
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${isActive('/roadmap') ? 'bg-white text-indigo-600 shadow-sm border-b-2 border-indigo-600' : 'bg-transparent text-gray-600 hover:bg-gray-200'}`}

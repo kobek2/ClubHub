@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { Calendar, CheckCircle2, Circle, Clock, Trash2, Layout } from 'lucide-react';
 import { MOCK_USERS } from '../Utils/mockData';
 import { Event, Task } from '../types';
@@ -51,9 +52,11 @@ const EventsPage: React.FC<EventsPageProps> = ({ events, tasks, setTasks }) => {
                     </div>
                   </div>
                   
-                  <h3 className="font-bold text-gray-900 mb-1 group-hover:text-indigo-600 transition-colors">
-                    {event.title}
-                  </h3>
+                  <Link href={`/events/${event.id}`}>
+                    <h3 className="font-bold text-gray-900 mb-1 group-hover:text-indigo-600 transition-colors">
+                      {event.title}
+                    </h3>
+                  </Link>
                   <p className="text-xs text-gray-500 line-clamp-2 mb-4 h-8">
                     {event.description || 'Planning in progress...'}
                   </p>

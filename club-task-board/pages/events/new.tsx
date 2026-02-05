@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
-import { X, Trash2, ArrowRight } from 'lucide-react';
+import { X, Trash2, ArrowRight, Copy } from 'lucide-react';
 import { Event, Task, User } from '../../src/types';
 import useFirestore from '../../src/Hooks/useFirestore';
 import { MOCK_USERS } from '../../src/Utils/mockData';
@@ -11,10 +11,13 @@ interface NewEventProps {
 
 export default function NewEvent({ currentUser }: NewEventProps) {
   const router = useRouter();
+  const copyFromId = typeof router.query.copyFrom === 'string' ? router.query.copyFrom : undefined;
+  const [events] = useFirestore<Event>('events');
+  const [tasks] = useFirestore<Task>('tasks');
   const [, addEvent] = useFirestore<Event>('events');
   const [, addTask] = useFirestore<Task>('tasks');
   
-  const [newEvent, setNewEvent] = useState<Omit<Event, 'id'>>({ 
+  const [newEvent, setNewEvent] = useState<Omit<Event, 'id'> & { copiedFromEventId?: string }>({ 
     title: '', 
     date: '', 
     location: '', 
@@ -27,6 +30,32 @@ export default function NewEvent({ currentUser }: NewEventProps) {
     dueDate: string 
   }>>([]);
 
+  const templateEvent = copyFromId ? events.find(e => e.id === copyFromId) : undefined;
+  const templateTasks = templateEvent ? tasks.filter(t => t.eventId === copyFromId) : [];
+  const hasAppliedTemplate = useRef(false);
+
+  useEffect(() => {
+    if (!copyFromId || !templateEvent || hasAppliedTemplate.current) return;
+    hasAppliedTemplate.current = true;
+    setNewEvent({
+      title: templateEvent.title,
+      date: templateEvent.date,
+      location: templateEvent.location ?? '',
+      description: templateEvent.description ?? '',
+      semester: templateEvent.semester,
+      academicYear: templateEvent.academicYear,
+      copiedFromEventId: templateEvent.id,
+    });
+    setNewTasks(
+      templateTasks.map(t => ({
+        title: t.title,
+        assigneeId: t.assigneeId,
+        priority: (t.priority ?? 'LOW') as string,
+        dueDate: t.dueDate ?? '',
+      }))
+    );
+  }, [copyFromId, templateEvent, templateTasks]);
+
   const handleCreateEvent = async () => {
     if (!newEvent.title || !newEvent.date) return;
 
@@ -34,7 +63,8 @@ export default function NewEvent({ currentUser }: NewEventProps) {
     await addEvent({ 
       ...newEvent, 
       id: eventId,
-      createdAt: new Date().toISOString() 
+      createdAt: new Date().toISOString(),
+      copiedFromEventId: newEvent.copiedFromEventId,
     });
 
     for (const t of newTasks) {
@@ -70,7 +100,15 @@ export default function NewEvent({ currentUser }: NewEventProps) {
   return (
     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-auto">
       <div className="bg-indigo-900 text-white p-6 rounded-t-2xl flex justify-between items-center">
-        <h2 className="text-xl font-bold">Create New Event</h2>
+        <h2 className="text-xl font-bold">
+          {templateEvent ? (
+            <span className="flex items-center gap-2">
+              <Copy size={20} /> New from template
+            </span>
+          ) : (
+            'Create New Event'
+          )}
+        </h2>
         <button 
           onClick={() => router.back()} 
           className="text-indigo-300 hover:text-white transition-colors"
@@ -78,6 +116,11 @@ export default function NewEvent({ currentUser }: NewEventProps) {
           <X size={24} />
         </button>
       </div>
+      {templateEvent && (
+        <div className="px-6 py-2 bg-indigo-50 text-indigo-800 text-sm">
+          Based on “{templateEvent.title}”. Edit and create to run it again.
+        </div>
+      )}
       <div className="p-6 space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
