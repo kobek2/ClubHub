@@ -2,6 +2,7 @@
   "name": "club-task-board",
   "version": "0.1.0",
   "private": true,
+  "engines": { "node": ">=18" },
   "dependencies": {
     "firebase": "^12.6.0",
     "lucide-react": "^0.555.0",
