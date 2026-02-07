@@ -1,17 +1,15 @@
-import { useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { User } from '../src/types';
+import { GetServerSideProps } from 'next';
 
-interface IndexProps {
-  currentUser: User;
-}
+export const getServerSideProps: GetServerSideProps = async () => {
+  return {
+    redirect: {
+      destination: '/board',
+      permanent: false,
+    },
+  };
+};
 
-export default function Index({ currentUser }: IndexProps) {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.replace('/board');
-  }, [router]);
-
+export default function Index() {
   return null;
 }
+
