@@ -5,7 +5,7 @@ export default function Document() {
     <Html lang="en">
       <Head>
         <link rel="icon" href="/favicon.ico" />
-        <link rel="manifest" href="/manifest.json" />
+        {/* Manifest removed to avoid 401 when deployment is protected on Vercel. */}
         <meta name="theme-color" content="#4f46e5" />
       </Head>
       <body>
