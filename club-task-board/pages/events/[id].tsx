@@ -82,7 +82,7 @@ export default function EventDetail({ currentUser }: EventDetailProps) {
       <div className="space-y-4">
         {/* 1. Ideation */}
         <Section
-          icon={Lightbulb}
+          icon={Lightbulb as React.ComponentType<{ size?: number }>}
           title="Ideation"
           subtitle="Goals and initial ideas"
           isOpen={editing === 'ideation'}
@@ -107,7 +107,7 @@ export default function EventDetail({ currentUser }: EventDetailProps) {
 
         {/* 2. Budget & Contacts */}
         <Section
-          icon={DollarSign}
+          icon={DollarSign as React.ComponentType<{ size?: number }>}
           title="Budget & contacts"
           subtitle="Projected vs actual, key contacts"
           isOpen={editing === 'budget'}
@@ -153,7 +153,7 @@ export default function EventDetail({ currentUser }: EventDetailProps) {
 
         {/* 3. Attendance */}
         <Section
-          icon={Users}
+          icon={Users as React.ComponentType<{ size?: number }>}
           title="Attendance"
           subtitle="Projected vs actual"
           isOpen={editing === 'attendance'}
@@ -178,7 +178,7 @@ export default function EventDetail({ currentUser }: EventDetailProps) {
         </Section>
 
         {/* 4. Tasks */}
-        <Section icon={ClipboardList} title="Action items" subtitle={`${eventTasks.filter(t => t.status === 'DONE').length} of ${eventTasks.length} done`} isOpen={true} onToggle={() => {}}>
+        <Section icon={ClipboardList as React.ComponentType<{ size?: number }>} title="Action items" subtitle={`${eventTasks.filter(t => t.status === 'DONE').length} of ${eventTasks.length} done`} isOpen={true} onToggle={() => {}}>
           <ul className="space-y-2 text-sm">
             {eventTasks.map(t => {
               const u = MOCK_USERS.find(u => u.id === t.assigneeId);
@@ -195,7 +195,7 @@ export default function EventDetail({ currentUser }: EventDetailProps) {
 
         {/* 5. Reflection */}
         <Section
-          icon={MessageSquare}
+          icon={MessageSquare as React.ComponentType<{ size?: number }>}
           title="Reflection"
           subtitle="What worked, what didn’t, improvements"
           isOpen={editing === 'reflection'}
